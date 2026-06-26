@@ -99,6 +99,24 @@ else
 fi
 echo ""
 
+# ── 检查 3：配方 JSON 用 "item" 不用 "id"（1.20.1 事实）──
+echo "[3] 配方字段用 item 不用 id"
+REC="$RES/data"
+if [ -d "$REC" ]; then
+  while IFS= read -r -d '' rj; do
+    name=$(basename "$rj")
+    # 含 "id" 作为键（1.21 风格）= 警告；含 "item" = ok
+    if grep -q '"id"[[:space:]]*:' "$rj"; then
+      no "  $name 用了 id" "1.20.1 配方用 \"item\"，\"id\" 是 1.21+ 写法"
+    else
+      ok "  $name 字段合规"
+    fi
+  done < <(find "$REC" -path '*/recipes/*.json' -print0)
+else
+  echo "  （无 recipes 目录，跳过）"
+fi
+echo ""
+
 echo "──────────────────────────────────────────────────────────────"
 echo "结果：PASS $PASS / FAIL $FAIL"
 [ "$FAIL" -eq 0 ] && { echo "✓ 全部通过"; exit 0; } || { echo "✗ 有 $FAIL 项未通过" >&2; exit 1; }

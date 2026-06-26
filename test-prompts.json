@@ -1,0 +1,20 @@
+{
+  "_comment": "create-mods skill 的验收 prompt。装好 skill 后对 Agent 说这些话，期望触发并按 1.20.1-Forge 流程产出。合格表现见每条的 expected。",
+  "prompts": [
+    {
+      "id": "smoke-sword",
+      "prompt": "帮我做一个 Minecraft 1.20.1 Forge 的 mod，加一把绿宝石剑，攻击力显示 30，耐久 2000。",
+      "expected": "应触发 create-mods。Agent 应：① 先确认版本是 1.20.1+Forge（不是 Fabric/NeoForge）；② 下载官方 MDK 搭骨架而非手写 gradle-wrapper；③ 写自定义 Tier 时直接 implements Tier（不出现 SimpleTier）、用 TierSortingRegistry.registerTier（不是 register）；④ 攻击力反推 attackDamageModifier = 30 - 1 - Tier.getAttackDamageBonus()；⑤ 用 PIL 生成 16x16 透明 PNG 贴图，不用 AI 文生图；⑥ 构建后验证 jar 内容/占位符展开/pack_format=15。"
+    },
+    {
+      "id": "version-guard",
+      "prompt": "我想在 1.21 NeoForge 上加一把自定义 Tier 的剑，用这个 skill 行吗？",
+      "expected": "应触发版本警告闸门：明确告诉用户本 skill 是 1.20.1+Forge 专用，1.21+NeoForge 用 SimpleTier+TagKey<Block> 是另一套 API，不能照搬，问是否仍按 1.20.1 走或另寻办法。不能直接套用 1.20.1 的 Tier/TierSortingRegistry 事实。"
+    },
+    {
+      "id": "api-verify-discipline",
+      "prompt": "我用的 Forge 1.20.1，自定义 Tier 该实现哪些方法？registerTier 怎么调？",
+      "expected": "回答 API 事实前，应主动对真实 jar 跑 javap（或 bash scripts/javap-verify.sh）核实，而不是凭记忆答。应给出：Tier 的 6 个 abstract 方法 + getTag default；registerTier(Tier, ResourceLocation, List<Object>, List<Object>)；getLevel 是 @Deprecated 但仍须实现。"
+    }
+  ]
+}

@@ -98,10 +98,11 @@ jar 路径里的 `forge_version` 与 `gradle.properties` 一致；`official_1.20
 
 ```bash
 curl -L -o mdk.zip "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-<FORGE_VER>/forge-1.20.1-<FORGE_VER>-mdk.zip"
+unzip -t mdk.zip >/dev/null 2>&1 || { echo "✗ mdk.zip 下载不完整或损坏，删除后重新下载"; rm -f mdk.zip; exit 1; }
 unzip -o mdk.zip -d <目标目录>
 ```
 
-`<FORGE_VER>` 用 `47.3.0` 或 `47.4.20`（与用户游戏对齐，问清楚）。MDK 解压后含 `build.gradle`、`gradle.properties`、`gradlew`、`gradle/wrapper/`、`src/` 示例。
+> **下载后必须校验**：`unzip -t` 测试 zip 完整性。curl 偶尔断在半截，损坏的 zip 解压会爆不明错误；校验失败就删掉重下，别拿坏 zip 往下走。
 
 > 若该 maven 路径 404（偶发），从 https://files.minecraftforge.net/ 找对应版本 MDK 直链。
 
@@ -119,19 +120,30 @@ unzip -o mdk.zip -d <目标目录>
 
 `build.gradle` 不要硬编码 mod_id——它读 gradle.properties 占位符，故无需改。
 
-### 3. 写 Java 源码（3 文件分工）
+### 3. 写 Java 源码（按内容类型分叉）
 
-**先删 MDK 自带的示例代码**：删掉 `src/main/java/com/example/` 整个目录（含 `examplemod/` 下的 ExampleMod.java、Config.java）。不删的话 `@Mod("examplemod")` 与你改后的 mod_id 不符，mod 加载会出问题。
+**先删 MDK 自带的示例代码**（所有类型都要做）：删掉 `src/main/java/com/example/` 整个目录（含 `examplemod/` 下的 ExampleMod.java、Config.java）。不删的话 `@Mod("examplemod")` 与你改后的 mod_id 不符，mod 加载会出问题。
 
 包路径对应 `mod_group_id`，如 `com/moresword/`（新建目录，别用残留的 com/example/）。
 
-**主类**（`@Mod(MODID)`）：创建 mod 事件总线、`register` DeferredRegister、监听 `BuildCreativeModeTabContentsEvent` 把物品塞进创造标签页。
+**主类**（`@Mod(MODID)`，所有类型都要写）：创建 mod 事件总线、`register` 各 DeferredRegister、监听 `BuildCreativeModeTabContentsEvent` 把内容塞进创造标签页。
 
-**物品注册**（`DeferredRegister<Item>`）：用 `ITEMS.register("xxx", () -> new XxxItem(...))`。
+**然后按要加的内容类型选写法**（不是所有 mod 都只有物品/Tier——做方块、食物、盔甲是不同的类和资源）：
 
-**自定义 Tier**：1.20.1 **没有 `SimpleTier`**（那是 NeoForge 1.20.2+）。直接 `implements net.minecraft.world.item.Tier`，实现 6 个方法（见下速查）。
+| 内容类型 | 注册方式 | 关键点 |
+|---------|---------|--------|
+| 物品/工具/武器 | `DeferredRegister<Item>` + `ITEMS.register("xxx", () -> new Item/SwordItem(...))` | 自定义武器等级见下「自定义 Tier」；非武器普通物品用 `new Item(props)` |
+| 方块 | `DeferredRegister<Block>` + 对应的 `BlockItem`（方块本身不进背包，要靠 BlockItem） | 方块还需 blockstate/models 方块状态 JSON，命名链比物品多一层 |
+| 食物 | `DeferredRegister<Item>`，构造时带 `FoodProperties` | 食物本质是带食用属性的 Item，注册走 Item 通道 |
+| 盔甲 | `DeferredRegister<Item>` + `ArmorItem` + 自定义 `ArmorMaterial` | 盔甲材质注册和 Tier 类似，1.20.1 API 也要 javap 核实 |
+
+> 上表只给方向。**涉及具体类（BlockItem / FoodProperties / ArmorMaterial 等）的构造器和字段，先 javap 核实真实签名再写，不靠记忆**——这是本 skill 铁律。本 skill 已核实并写进速查表的只有 Tier/SwordItem/TierSortingRegistry（见下），其余类型自行核实。
+
+**自定义 Tier**（仅武器/工具需要）：1.20.1 **没有 `SimpleTier`**（那是 NeoForge 1.20.2+）。直接 `implements net.minecraft.world.item.Tier`，实现 6 个方法（见下速查）。
 
 ### 4. 资源文件（命名空间 = mod_id）
+
+> 下面是**物品/工具/武器**的资源结构。方块还需 `blockstates/` 和 `models/block/`（方块状态 JSON），盔甲还需贴图分层——这些类型的资源结构不同，按需补，并先核实 1.20.1 的具体路径约定。
 
 ```
 src/main/resources/

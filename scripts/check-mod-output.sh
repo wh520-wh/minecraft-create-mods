@@ -81,6 +81,24 @@ else
 fi
 echo ""
 
+# ── 检查 2：pack.mcmeta 的 pack_format 对 1.20.1 必须 = 15 ──
+echo "[2] pack.mcmeta pack_format=15"
+PMC="$RES/pack.mcmeta"
+if [ -f "$PMC" ]; then
+  pf=$("$PY" - "$PMC" <<'PY'
+import sys,json
+try:
+    print(json.load(open(sys.argv[1],encoding='utf-8'))["pack"]["pack_format"])
+except Exception as e:
+    print("ERR")
+PY
+)
+  if [ "$pf" = "15" ]; then ok "pack_format=15"; else no "pack_format 错" "实际=$pf（期望 15）"; fi
+else
+  no "pack.mcmeta 缺失" "$PMC"
+fi
+echo ""
+
 echo "──────────────────────────────────────────────────────────────"
 echo "结果：PASS $PASS / FAIL $FAIL"
 [ "$FAIL" -eq 0 ] && { echo "✓ 全部通过"; exit 0; } || { echo "✗ 有 $FAIL 项未通过" >&2; exit 1; }

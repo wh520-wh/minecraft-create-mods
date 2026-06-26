@@ -57,8 +57,10 @@
 ## 快速开始
 
 ```bash
-git clone <本仓库> ~/.claude/skills/create-mods
+git clone https://github.com/wh520-wh/minecraft-create-mods ~/.claude/skills/create-mods
 ```
+
+> Windows 下 `~/.claude/skills/` 实际是 `C:\Users\<你>\.claude\skills\`。
 
 装完对 Agent 说：
 
@@ -68,7 +70,7 @@ git clone <本仓库> ~/.claude/skills/create-mods
 
 Agent 会：确认版本 → 下载官方 MDK → 改 gradle.properties → 写主类/自定义 Tier/物品注册 → 生成 lang/model/recipe/贴图 → 构建并验证产物，过程中对不确定的 API 跑 javap 核实。
 
-> 仓库尚在本地打磨期；上架 GitHub 后可换成 `git clone github.com/<owner>/create-mods`。
+> 仓库地址：https://github.com/wh520-wh/minecraft-create-mods
 
 ---
 

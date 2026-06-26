@@ -9,7 +9,7 @@
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-green)](https://files.minecraftforge.net/)
 [![Forge](https://img.shields.io/badge/Forge-47.x-orange)](https://files.minecraftforge.net/)
 
-**从空目录三分钟做出一把能在游戏里举起来的 1.20.1 Forge 剑——每条 API 都经真实 jar 对账。**
+**从空目录做出一个能跑的 Minecraft 1.20.1 Forge 模组——每条 API 都经真实 jar 对账。**
 
 [看效果](#效果示例) · [快速开始](#快速开始) · [触发方式](#触发方式) · [它和同类有什么不同](#它和同类有什么不同) · [安全边界](#安全边界) · [验证](#验证与测试)
 
@@ -24,7 +24,7 @@
 具体能帮你做这些事：
 
 - **从零搭一个 Forge 1.20.1 mod 工程**：下载官方 MDK、填好 mod 信息、生成主类，不手写二进制 wrapper。
-- **加自定义物品和剑**：注册物品、做自定义武器等级（Tier）、塞进创造模式背包。
+- **添加游戏内容**：注册物品、武器、工具及自定义等级（Tier），塞进创造模式背包。
 - **写合成配方**：1.20.1 专用的配方格式（用 `"item"` 不用新版的 `"id"`）。
 - **生成合规贴图**：用程序画 16×16 透明 PNG，不用会报错的 AI 文生图。
 - **编译并验证产物**：build 出能塞进 mods 文件夹的 jar，再一键校验贴图/格式/命名链全合规。
@@ -36,7 +36,7 @@
 
 ## 它解决什么问题
 
-事情是这样的：你想给 Minecraft 1.20.1 加把自定义剑。你问 AI，AI 凭记忆给你写了 `SimpleTier`——编译炸了，因为 **1.20.1 根本没有 `SimpleTier`**（那是 NeoForge 1.20.2+ 的）。你让它改，它又把 `TierSortingRegistry.registerTier` 写成 `register`——又炸。每个版本 Forge API 都在漂移，AI 的训练记忆会骗你，一轮盲改就浪费 12 秒+ 编译。
+事情是这样的：你想给 Minecraft 1.20.1 做个模组——比如加个自定义物品或武器。你问 AI，AI 凭记忆给你写了 `SimpleTier`——编译炸了，因为 **1.20.1 根本没有 `SimpleTier`**（那是 NeoForge 1.20.2+ 的）。你让它改，它又把 `TierSortingRegistry.registerTier` 写成 `register`——又炸。每个版本 Forge API 都在漂移，AI 的训练记忆会骗你，一轮盲改就浪费 12 秒+ 编译。
 
 普通做法为什么不行：MCreator 是 GUI，界面劝退一半人；官方 MDK 是模板，新手仍要自己啃 API；其他"AI mod skill"要么空壳、要么吹覆盖五个 loader 却没代码。
 

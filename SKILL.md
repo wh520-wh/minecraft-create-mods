@@ -35,7 +35,11 @@ description: Use when creating a Minecraft Forge mod from scratch — adding ite
 写涉及 Forge/vanilla 类的代码前，对真实 jar 跑 javap 看签名。`javap` 通常不在 PATH，定位到 JDK 安装目录：
 
 ```bash
-JAVAP="/c/Program Files/Java/jdk-21/bin/javap.exe"   # 按实际 JDK 路径
+# 一键对账 6 条 API 事实（首选，仓库已固化）：
+bash scripts/javap-verify.sh
+
+# 手动 javap 看任意类（教学/排查用，按实际 JDK 路径）：
+JAVAP="/c/Program Files/Java/jdk-21/bin/javap.exe"
 JAR=~/.gradle/caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/1.20.1-47.3.0_mapped_official_1.20.1/forge-1.20.1-47.3.0_mapped_official_1.20.1.jar
 "$JAVAP" -cp "$JAR" -p net.minecraftforge.common.TierSortingRegistry
 "$JAVAP" -cp "$JAR" -p net.minecraft.world.item.Tier
@@ -165,6 +169,8 @@ src/main/resources/
 
 **构建后必须验证产物**（一个能 build 但占位符没展开的 mod 进游戏不加载）：
 
+> 一键校验产物合规（贴图/pack_format/配方/命名链）：`bash scripts/check-mod-output.sh <mod工程根目录>`
+
 ```bash
 # 1. 看 jar 内容齐全：3 个源类 class + lang/model/texture/recipe + mods.toml + pack.mcmeta
 jar tf build/libs/<modid>-<ver>.jar | sort
@@ -193,6 +199,8 @@ unzip -p build/libs/<modid>-<ver>.jar pack.mcmeta | grep pack_format
 | 剑显示攻击力公式 | `玩家基础(1) + Tier.getAttackDamageBonus() + attackDamageModifier` |
 
 ## 贴图：必须 16×16 透明 PNG
+
+> 贴图规格可一键校验：`bash scripts/check-mod-output.sh <工程>` 会查所有 item 贴图是否 16×16 透明 PNG。
 
 Minecraft 物品贴图规格：**16×16 像素、PNG、透明背景**。AI 文生图（如 minimax）生成的图几乎都不满足——尺寸不对、背景非透明、剑不居中。
 

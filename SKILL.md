@@ -1,6 +1,6 @@
 ---
 name: create-mods
-description: Use when creating a Minecraft Forge mod from scratch — adding items, custom tool tiers (Tier), swords, recipes, textures, or building the project. Only for Minecraft 1.20.1 + Forge 47.x. Do not use for Fabric/NeoForge or other MC versions without re-verifying every API.
+description: Use when creating or extending a Minecraft Forge mod from scratch — adding any in-game content (items, tools, weapons, blocks, food, armor, custom tool tiers/Tier, recipes, textures, lang, creative tabs) or building/fixing the project. Only for Minecraft 1.20.1 + Forge 47.x. Do not use for Fabric/NeoForge or other MC versions without re-verifying every API.
 ---
 
 # Create Mods (Minecraft Forge 1.20.1)
@@ -25,7 +25,7 @@ description: Use when creating a Minecraft Forge mod from scratch — adding ite
 ## When to Use
 
 - 从零创建 Forge 1.20.1 mod
-- 给现有 Forge 1.20.1 mod 加物品/剑/自定义 Tier/配方/贴图
+- 给现有 Forge 1.20.1 mod 添加任意游戏内容（物品、工具、武器、方块、食物、盔甲、自定义 Tier、配方、贴图、语言文件、创造标签页）
 - mod 编译失败、怀疑是 Forge API 用错时
 
 不用于：Fabric/NeoForge、非 1.20.1 版本、纯 datapack（那是另一套）。
@@ -73,18 +73,20 @@ jar 路径里的 `forge_version` 与 `gradle.properties` 一致；`official_1.20
 
 | 拷问 | 要想清楚什么 | 复述时怎么说 |
 |------|-------------|-------------|
-| ① 你到底要什么 | 把"加把绿宝石剑"翻译成清晰目标：什么物品、什么 Tier、几个、放哪个创造标签页 | "你要的是一把绿宝石剑，攻击力显示 30、耐久 2000，放在战斗标签页" |
+| ① 你到底要什么 | 把需求翻译成清晰目标：加什么内容（物品/工具/方块/食物/盔甲…）、几个、放哪个创造标签页、有没有特殊属性（耐久、攻击力等） | "你要的是一个 XX，耐久 X，放在 XX 标签页" |
 | ② 大概分几步 | 搭骨架→改配置→写源码→资源→构建验证，五步 | "我大概分五步：搭工程、填信息、写代码、配资源、编译验证" |
-| ③ 做出来啥效果 | 一个能 build 出 jar、塞进 mods 文件夹就能在游戏里用/合成的剑 | "做完你能拿到一个 jar，放 mods 文件夹，进游戏能合成、能挥" |
+| ③ 做出来啥效果 | 一个能 build 出 jar、塞进 mods 文件夹就能在游戏里用的 mod | "做完你能拿到一个 jar，放 mods 文件夹，进游戏就能用" |
 | ④ 用到什么工具 | Forge MDK、Gradle、javap、PIL（贴图） | "用到官方 MDK 起步、Gradle 编译、PIL 画贴图" |
-| ⑤ 要不要生成贴图 | 大部分自定义物品都要贴图（16×16 透明 PNG）；没图会显示紫黑方块 | "要给这把剑画贴图吗？要的话我用程序画一个 16×16 透明图" |
+| ⑤ 要不要生成贴图 | 大部分自定义内容都要贴图（16×16 透明 PNG）；没图会显示紫黑方块 | "要给这个内容画贴图吗？要的话我用程序画一个 16×16 透明图" |
 
-**第六问——最该提醒的注意事项**（复述时主动说，别等用户问）：
+> 上表右列只是示范复述口径，请按用户真实需求替换（比如用户要做剑，才提攻击力；做方块就不提）。
+
+**第六问——最该提醒的注意事项**（复述时主动说，别等用户问；按需求挑相关的说）：
 
 - 版本锁死：本 skill 只做 1.20.1 + Forge。你要是 1.21 或别的加载器，我得先停下确认。
 - 首次编译慢：第一次 build 要下反编译产物，约 7 分钟，后面就快了。
 - API 我不靠记忆：涉及 Forge 类我会先 javap 核实真实 jar，不猜。
-- 攻击力换算：你要的"攻击力 30"是游戏 UI 显示值，我会反推成代码里的 modifier，公式 `modifier = 30 − 1 − Tier加成`。
+- 数值换算（涉及武器/工具时才提）：你给的"攻击力 30"等是游戏 UI 显示值，我会反推成代码里的 modifier，公式见下「攻击力数值拆算」。
 
 复述完等用户确认"对，就这样"。需求不清或有多种解读时，**宁可多问一轮也别返工**。
 
@@ -196,7 +198,7 @@ unzip -p build/libs/<modid>-<ver>.jar pack.mcmeta | grep pack_format
 | `TierSortingRegistry.registerTier` 静态初始化 | 必须在剑构造前执行——放在 `ModTiers` 的 `static {}` 块即可，别放错位置 |
 | 创造标签页事件 | 监听 `BuildCreativeModeTabContentsEvent`：`event.getTabKey()` 返回 `ResourceKey<CreativeModeTab>`，用 `event.accept(RegistryObject<Item>)` 塞物品（靠 `accept(Supplier<? extends ItemLike>)` 重载适配，不是 `accept(ItemLike)`；后者继承自 `CreativeModeTab.Output`，单 javap 事件类会漏看） |
 | 配方 JSON 格式 | 1.20.1 用 `"item": "minecraft:xxx"`（1.21 起改成 `"id"` 且配料多用 tag）——这是和 SimpleTier 同级的版本地雷 |
-| 剑显示攻击力公式 | `玩家基础(1) + Tier.getAttackDamageBonus() + attackDamageModifier` |
+| 武器显示攻击力公式（剑/武器） | `玩家基础(1) + Tier.getAttackDamageBonus() + attackDamageModifier` |
 
 ## 贴图：必须 16×16 透明 PNG
 
@@ -215,7 +217,9 @@ img.save("src/main/resources/assets/<modid>/textures/item/<name>.png")
 
 不要把图片塞进对话（无多模态能力）。只生成、保存、用 `ls` 确认大小。
 
-## 攻击力数值拆算
+## 攻击力数值拆算（以剑/武器为例，非通用纪律）
+
+> 这一节针对武器类内容。做方块、食物、普通物品时跳过本节。
 
 用户给"攻击力 30"指 UI 显示总伤害。反推 `attackDamageModifier`：
 

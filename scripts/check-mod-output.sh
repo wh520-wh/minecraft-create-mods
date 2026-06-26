@@ -4,9 +4,21 @@
 # 用法：bash scripts/check-mod-output.sh <mod工程根目录或jar>
 #       工程根目录应含 src/main/resources/...
 # 检查项：贴图规格、pack_format=15、配方字段用"item"、命名四环节一致。
+# 注：#2-#4 为后续任务，本任务仅实现 #1 贴图检查。
 # 退出码：0=全 PASS；1=有 FAIL 或参数错。
 
 set -uo pipefail
+
+# 探测 python：优先 python3，回退 python（本机 python3 可能是 Store 桩，exit 非0会自动回退）
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0 if sys.version_info>=(3,8) else 1)' 2>/dev/null; then
+  PY=python3
+elif command -v python >/dev/null 2>&1; then
+  PY=python
+else
+  echo "✗ 找不到 python（需要 PIL）。装 Python 3.8+ 后重试。" >&2
+  exit 1
+fi
+
 ROOT="${1:-}"
 if [ -z "$ROOT" ]; then
   echo "用法: bash scripts/check-mod-output.sh <mod工程根目录或jar>" >&2
@@ -16,6 +28,7 @@ fi
 # 若传 jar，解压到临时目录
 if [ -f "$ROOT" ] && [[ "$ROOT" == *.jar ]]; then
   TMP="$(mktemp -d)"
+  trap 'rm -rf "${TMP:-}"' EXIT   # 退出时清理解压临时目录
   unzip -q "$ROOT" -d "$TMP"
   ROOT="$TMP"
   RES="$ROOT"
@@ -38,7 +51,7 @@ if [ -d "$TEX_DIR" ]; then
   while IFS= read -r -d '' png; do
     found=1
     # 用 PIL 检查尺寸和透明度
-    info=$(python - "$png" <<'PY'
+    info=$("$PY" - "$png" <<'PY'
 import sys
 from PIL import Image
 try:

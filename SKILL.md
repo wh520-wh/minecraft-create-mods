@@ -290,5 +290,6 @@ attackDamageModifier = 目标显示攻击力 - 玩家基础(1) - Tier.getAttackD
 - 准备套用 `SimpleTier` / `register(`（1.20.1 没有）
 - 用户说的版本不是 1.20.1 + Forge，却想直接套本流程
 - 拿 AI 生成的图直接当贴图，没转 16×16 透明 PNG
+- 需求明显超出原版/Forge（要做配置界面 / 配饰槽 / 游戏内手册），却埋头从零写、没考虑前置 → 停下，Read `references/prerequisite-mods.md`，把"原生写 vs 引前置"的利弊摆给用户
 
-**这些意味着：停下，回到 javap 核实 / 确认版本 / 用 PIL 生成贴图。**
+**这些意味着：停下，回到 javap 核实 / 确认版本 / 用 PIL 生成贴图 / 评估是否该引前置。**

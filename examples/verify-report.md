@@ -49,3 +49,10 @@ bash scripts/javap-verify.sh
 SKILL.md 速查表的每一条——`SimpleTier` 不存在、Tier 的 6 个方法、`registerTier` 签名、
 `SwordItem` 构造器、事件 `accept` 重载、`getLevel` 的 `@Deprecated`+abstract——
 都不是凭训练记忆写的，而是对真实 jar 对账得出的。这是访行里**没有任何同行做到**的深度。
+
+## 两个脚本分工
+
+- `scripts/javap-verify.sh` —— 核实 **API 事实**（Tier/TierSortingRegistry/SwordItem 等签名），针对真实 Forge jar。
+- `scripts/check-mod-output.sh` —— 核实 **mod 产物合规**（贴图/pack_format/配方/命名链），针对 build 出来的工程或 jar。
+
+一个查"API 对不对"，一个查"做出来的东西合不合规"，合起来是 create-mods 的完整信任底座。

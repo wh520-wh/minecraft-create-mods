@@ -47,13 +47,9 @@ JAR=~/.gradle/caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/1
 
 jar 路径里的 `forge_version` 与 `gradle.properties` 一致；`official_1.20.1` 段随 `mapping_channel`/`mapping_version` 变（parchment 映射下路径不同）。
 
-**鸡生蛋问题（重要）**：那个 mapped jar **全新工程里不存在**，要等 ForgeGradle 第一次解析 `minecraft` 依赖（首次 `./gradlew compileJava` 或 `build`）才生成。所以正确顺序是：
-1. 写一个能编译的**极简主类**（只 `@Mod` + 空 `DeferredRegister`，不含任何待核实的 Tier/SwordItem 调用）
-2. 跑 `./gradlew compileJava` 物化 jar（首次约 7 分钟）
-3. javap 核实 Tier / SwordItem / TierSortingRegistry 等真实签名
-4. 再写完整 Tier/物品代码
+**鸡生蛋问题（重要）**：那个 mapped jar **全新工程里不存在**，要等 ForgeGradle 第一次解析 `minecraft` 依赖（首次 `./gradlew compileJava`）才生成。所以写代码前必须先触发首次编译、物化 jar、再 javap 核实——具体顺序已织进流程第 3 步（3a 极简主类触发编译 → 3b javap 核实 → 3c 写完整代码），按那里走，不要一上来就写完整代码。
 
-机器若有旧缓存（jar 已在）可跳过 1-2。判断方法：`ls "$JAR"` 看在不在。
+机器若有旧缓存（`ls "$JAR"` 在）可跳过 3a-3b 直接进 3c。
 
 **铁律：看到一个类不确定有哪些方法/构造器/字段，就 javap 它。一次 javap 顶十次盲猜。**
 
@@ -122,13 +118,24 @@ unzip -o mdk.zip -d <目标目录>
 
 ### 3. 写 Java 源码（按内容类型分叉）
 
-**先删 MDK 自带的示例代码**（所有类型都要做）：删掉 `src/main/java/com/example/` 整个目录（含 `examplemod/` 下的 ExampleMod.java、Config.java）。不删的话 `@Mod("examplemod")` 与你改后的 mod_id 不符，mod 加载会出问题。
+这一步有个**鸡生蛋陷阱**：用来核实 API 的 mapped jar，全新工程里不存在，要等第一次编译才生成（见 Core Discipline 段）。所以必须按 3a→3b→3c 的顺序走，不能一上来就写完整代码。机器若有旧缓存（`ls "$JAR"` 在）可跳过 3a-3b 直接进 3c。
 
-包路径对应 `mod_group_id`，如 `com/moresword/`（新建目录，别用残留的 com/example/）。
+#### 3a. 先写极简主类，触发首次编译
 
-**主类**（`@Mod(MODID)`，所有类型都要写）：创建 mod 事件总线、`register` 各 DeferredRegister、监听 `BuildCreativeModeTabContentsEvent` 把内容塞进创造标签页。
+1. **删 MDK 自带示例代码**：删掉 `src/main/java/com/example/` 整个目录（含 `examplemod/` 下的 ExampleMod.java、Config.java）。不删的话 `@Mod("examplemod")` 与你改后的 mod_id 不符，mod 加载会出问题。
+2. 包路径对应 `mod_group_id`，如 `com/moresword/`（新建目录，别用残留的 com/example/）。
+3. 写一个**极简主类**：只 `@Mod(MODID)` + 空 `DeferredRegister`（或干脆不注册任何内容），**不含任何待核实的 Tier/SwordItem/BlockItem 等调用**——目的是能编译通过、让 ForgeGradle 物化 mapped jar。
+4. 跑 `./gradlew compileJava`（首次约 7 分钟，下反编译产物）。
 
-**然后按要加的内容类型选写法**（不是所有 mod 都只有物品/Tier——做方块、食物、盔甲是不同的类和资源）：
+> 这一步只为了让 mapped jar 生成，主类越简单越好，别在这里写业务逻辑。
+
+#### 3b. javap 核实真实 API 签名
+
+jar 物化后，对要用的类跑 javap 看真实签名（首选 `bash scripts/javap-verify.sh` 对账已核实的，或手动 javap 任意类）。**这一步必须在写完整代码前做**——凭记忆写必踩版本坑。
+
+#### 3c. 写完整代码（按内容类型分叉）
+
+核实完再写真正的业务代码。主类里 `register` 各 DeferredRegister、监听 `BuildCreativeModeTabContentsEvent` 把内容塞进创造标签页。然后按要加的内容类型选写法（不是所有 mod 都只有物品/Tier——做方块、食物、盔甲是不同的类和资源）：
 
 | 内容类型 | 注册方式 | 关键点 |
 |---------|---------|--------|

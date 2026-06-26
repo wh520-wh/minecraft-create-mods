@@ -274,6 +274,7 @@ attackDamageModifier = 目标显示攻击力 - 玩家基础(1) - Tier.getAttackD
 | 物品名显示成 `item.xxx.yyy` 原文 | 语言文件键不对 | 键须 `item.<modid>.<name>` |
 | 凭记忆写 API 编译反复失败 | 没核实版本 | **javap 真实 jar** |
 | 贴图加载报错 | 尺寸非 16×16 或非 PNG | PIL 生成合规贴图 |
+| 引入前置却没在 mods.toml 声明 mandatory 依赖 | 漏配依赖声明 | 玩家没装前置直接崩，必须加 `[[dependencies.<modid>]]` 且 `mandatory=true` |
 
 ## Rationalizations（别给自己找借口）
 

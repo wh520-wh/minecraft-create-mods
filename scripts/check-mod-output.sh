@@ -4,7 +4,6 @@
 # 用法：bash scripts/check-mod-output.sh <mod工程根目录或jar>
 #       工程根目录应含 src/main/resources/...
 # 检查项：贴图规格、pack_format=15、配方字段用"item"、命名四环节一致。
-# 注：#2-#4 为后续任务，本任务仅实现 #1 贴图检查。
 # 退出码：0=全 PASS；1=有 FAIL 或参数错。
 
 set -uo pipefail
@@ -114,6 +113,44 @@ if [ -d "$REC" ]; then
   done < <(find "$REC" -path '*/recipes/*.json' -print0)
 else
   echo "  （无 recipes 目录，跳过）"
+fi
+echo ""
+
+# ── 检查 4：命名四环节一致（注册名↔模型↔layer0↔贴图↔lang）──
+echo "[4] 命名链一致"
+MOD_DIR=$(find "$RES/assets" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1)
+if [ -n "$MOD_DIR" ]; then
+  modid=$(basename "$MOD_DIR")
+  while IFS= read -r -d '' mj; do
+    name=$(basename "$mj" .json)
+    # layer0 期望 "modid:item/name"
+    layer0=$("$PY" - "$mj" <<'PY'
+import sys,json
+try:
+    print(json.load(open(sys.argv[1],encoding='utf-8'))["textures"]["layer0"])
+except Exception:
+    print("ERR")
+PY
+)
+    want_layer0="${modid}:item/${name}"
+    want_tex="$MOD_DIR/textures/item/${name}.png"
+    want_lang_en="$MOD_DIR/lang/en_us.json"
+    if [ "$layer0" != "$want_layer0" ]; then
+      no "  $name layer0 不符" "实际=$layer0 期望=$want_layer0"
+    elif [ ! -f "$want_tex" ]; then
+      no "  $name 贴图缺失" "$want_tex"
+    else
+      # 查 lang 键
+      key="item.${modid}.${name}"
+      if [ -f "$want_lang_en" ] && grep -q "\"$key\"" "$want_lang_en"; then
+        ok "  $name 命名链完整（模型↔layer0↔贴图↔lang）"
+      else
+        no "  $name lang 键缺失" "期望键 $key"
+      fi
+    fi
+  done < <(find "$MOD_DIR/models/item" -name '*.json' -print0 2>/dev/null)
+else
+  no "assets 下无 modid 目录" "$RES/assets"
 fi
 echo ""
 

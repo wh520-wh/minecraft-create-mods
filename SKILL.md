@@ -183,26 +183,41 @@ src/main/resources/
 
 ```bash
 ./gradlew build      # 产物 build/libs/<modid>-<ver>.jar，可直接放 mods 文件夹
-./gradlew runClient  # 开发环境实测
 ```
 
 首次 build 下载反编译产物较慢（约 7 分钟），后续增量快。
 
-**构建后必须验证产物**（一个能 build 但占位符没展开的 mod 进游戏不加载）：
+**验证分两层——agent 能做的文件级校验，和 agent 做不到的真加载验证：**
 
-> 一键校验产物合规（贴图/pack_format/配方/命名链）：`bash scripts/check-mod-output.sh <mod工程根目录>`
+**第一层：文件级校验**（agent 自动可做）
+
+一键校验产物合规（贴图/pack_format/配方/命名链）：
 
 ```bash
-# 1. 看 jar 内容齐全：3 个源类 class + lang/model/texture/recipe + mods.toml + pack.mcmeta
-jar tf build/libs/<modid>-<ver>.jar | sort
+bash scripts/check-mod-output.sh <mod工程根目录>
+```
 
-# 2. 抽查 mods.toml 占位符已展开（不能有 ${mod_id} 这种残留）
+再抽查 jar 内容（占位符展开、文件齐全）：
+
+```bash
+# 1. mods.toml 占位符已展开（不能有 ${mod_id} 残留）
 unzip -p build/libs/<modid>-<ver>.jar META-INF/mods.toml | grep modId
 # 期望：modId="<你的modid>"，不是 modId="${mod_id}"
 
-# 3. pack.mcmeta 的 pack_format 对 1.20.1 必须是 15
+# 2. pack.mcmeta 的 pack_format 对 1.20.1 必须是 15
 unzip -p build/libs/<modid>-<ver>.jar pack.mcmeta | grep pack_format
+
+# 3. 看 jar 内容齐全：源类 class + lang/model/texture/recipe + mods.toml + pack.mcmeta
+jar tf build/libs/<modid>-<ver>.jar | sort
 ```
+
+> ⚠️ **第一层全过 ≠ mod 能加载**。文件合规只能挡住"占位符没展开/贴图规格错/命名链断"这类问题，挡不住加载期崩溃（@Mod id 对不上、mods.toml 字段错、运行期异常）。这些要靠第二层。
+
+**第二层：真加载验证**（agent 做不到，是最后的人工环节）
+
+把 jar 放进游戏的 mods 文件夹，`./gradlew runClient`（或直接启动装了 Forge 的游戏）启动一次，看能不能进主菜单、内容在不在。崩了去读 `run/logs/latest.log`（或 crash report）找 `[minecraft/ERROR]` / `Exception`。
+
+> 这一步要人启动图形界面、用眼睛判断有没有进主菜单——agent 没法自动判 PASS/FAIL，所以**放在交付流程最后，作为人工验收**，不进 agent 的自动化验证脚本。
 
 ## 1.20.1 API 速查（已 javap 核实，仍建议用时复核）
 
